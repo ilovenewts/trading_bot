@@ -1,4 +1,5 @@
 import os
+from math import floor
 
 import ccxt
 import pandas as pd
@@ -25,7 +26,8 @@ class Binance:
             symbol=symbol,
             timeframe='1d',
             since=None,
-            limit=10)
+            limit=10
+        )
 
         df = pd.DataFrame(data=btc, columns=['datetime', 'open', 'high', 'low', 'close', 'volume'])
         df['datetime'] = pd.to_datetime(df['datetime'], unit='ms')
@@ -33,9 +35,20 @@ class Binance:
 
         yesterday = df.iloc[-2]
         today = df.iloc[-1]
-        target = today['open'] + (yesterday['high'] - yesterday['low']) * 0.5
-        return target
+        long_target = today['open'] + (yesterday['high'] - yesterday['low']) * 0.5
+        short_target = today['open'] - (yesterday['high'] - yesterday['low']) * 0.5
+        return long_target, short_target
 
     def fetch_close(self, symbol):
         ticker = self.api.fetch_ticker(symbol)
         return ticker['last']
+
+    def fetch_usdt_balance(self):
+        balance = self.api.fetch_balance()
+        return balance['total']['USDT']
+
+    def cal_amount(self, usdt_balance, cur_price):
+        portion = 0.1
+        usdt_trade = usdt_balance * portion
+        amount = floor((usdt_trade * 1000000) / cur_price) / 1000000
+        return amount
