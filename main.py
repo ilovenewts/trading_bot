@@ -2,32 +2,28 @@ import os
 import time
 from datetime import datetime
 
-import ccxt
 from dotenv import load_dotenv
+
+from binance import Binance
 
 
 def main():
     app: str = os.getenv('app')
     if app == 'development':
         load_dotenv()
-    access = os.getenv('ACCESS_KEY')
-    secret = os.getenv('SECRET_KEY')
-
-    binance = ccxt.binance(config={
-        'apiKey': access,
-        'secret': secret,
-        'enableRateLimit': True,
-        'options': {
-            'defaultType': 'future'
-        }
-    })
 
     symbol = "BTC/USDT"
+    binance = Binance()
+    target = binance.cal_target(symbol)
 
     while True:
-        btc = binance.fetch_ticker(symbol)
         now = datetime.now()
-        print(now, btc['last'])
+
+        if now.hour == 9 and now.minute == 0 and (20 <= now.second < 30):
+            target = binance.cal_target(symbol)
+
+        close = binance.fetch_close(symbol)
+        print(symbol, now, close, target)
         time.sleep(1)
 
 
